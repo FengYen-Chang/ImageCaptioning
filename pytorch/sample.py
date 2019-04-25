@@ -6,7 +6,7 @@ import pickle
 import os
 from torchvision import transforms 
 from build_vocab import Vocabulary
-from model import EncoderCNN, DecoderRNN
+from model import EncoderCNN, DecoderRNN, Embed
 from PIL import Image
 
 
@@ -46,18 +46,38 @@ def main(args):
     # Prepare an image
     image = load_image(args.image, transform)
     image_tensor = image.to(device)
-    
+ 
+    # Define embed
+    _embed = Embed(decoder.embed)
+
     # Generate an caption from the image
     feature = encoder(image_tensor)
-    sampled_ids = decoder(feature)
-    sampled_ids = sampled_ids[0].cpu().numpy()          # (1, max_seq_length) -> (max_seq_length)
     
+    sampled_ids = []
+    state = None
+    
+    # sampled_ids = decoder(feature)
+    # sampled_ids = sampled_ids[0].cpu().numpy()          # (1, max_seq_length) -> (max_seq_length)
+    
+    inputs = feature    
+
+    for i in range(20):
+        outputs, state = decoder(inputs, states=state)
+        _, pred = outputs.max(1)
+        sampled_ids.append(pred)
+        inputs = _embed(pred)
+
+    sampled_ids = torch.stack(sampled_ids, 1)
+    sampled_ids = sampled_ids[0].cpu().numpy() 
+
     # Save the model as .onnx format
     Decoder_ONNX_dir = '../models/onnx/decoder.onnx'
     Encoder_ONNX_dir = '../models/onnx/encoder.onnx'
+    Embeded_ONNX_dir = '../models/onnx/embeded.onnx'
 
-    torch.onnx.export(encoder, image_tensor, Encoder_ONNX_dir)
-    # torch.onnx.export(decoder, feature, Decoder_ONNX_dir)
+    # torch.onnx.export(encoder, image_tensor, Encoder_ONNX_dir)
+    torch.onnx.export(decoder, feature, Decoder_ONNX_dir)
+    torch.onnx.export(_embed, pred, Embeded_ONNX_dir)
 
     # Convert word_ids to words
     sampled_caption = []
