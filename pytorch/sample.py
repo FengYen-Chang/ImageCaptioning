@@ -49,9 +49,16 @@ def main(args):
     
     # Generate an caption from the image
     feature = encoder(image_tensor)
-    sampled_ids = decoder.sample(feature)
+    sampled_ids = decoder(feature)
     sampled_ids = sampled_ids[0].cpu().numpy()          # (1, max_seq_length) -> (max_seq_length)
     
+    # Save the model as .onnx format
+    Decoder_ONNX_dir = '../models/onnx/decoder.onnx'
+    Encoder_ONNX_dir = '../models/onnx/encoder.onnx'
+
+    torch.onnx.export(encoder, image_tensor, Encoder_ONNX_dir)
+    # torch.onnx.export(decoder, feature, Decoder_ONNX_dir)
+
     # Convert word_ids to words
     sampled_caption = []
     for word_id in sampled_ids:
