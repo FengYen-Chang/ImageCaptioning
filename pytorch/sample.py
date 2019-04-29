@@ -6,7 +6,7 @@ import pickle
 import os
 from torchvision import transforms 
 from build_vocab import Vocabulary
-from model import EncoderCNN, DecoderRNN, Embed
+from model import EncoderCNN, DecoderRNN, Embed, DecoderRNN2
 from PIL import Image
 
 
@@ -36,6 +36,7 @@ def main(args):
     # Build models
     encoder = EncoderCNN(args.embed_size).eval()  # eval mode (batchnorm uses moving mean/variance)
     decoder = DecoderRNN(args.embed_size, args.hidden_size, len(vocab), args.num_layers)
+    
     encoder = encoder.to(device)
     decoder = decoder.to(device)
 
@@ -49,23 +50,29 @@ def main(args):
  
     # Define embed
     _embed = Embed(decoder.embed)
+    _decoder = DecoderRNN2(decoder.lstm, decoder.linear)
 
     # Generate an caption from the image
     feature = encoder(image_tensor)
     
     sampled_ids = []
-    state = None
+    state = (torch.zeros((1, 1, 512)).to(device), torch.zeros((1, 1, 512)).to(device))
     
     # sampled_ids = decoder(feature)
     # sampled_ids = sampled_ids[0].cpu().numpy()          # (1, max_seq_length) -> (max_seq_length)
     
     inputs = feature    
 
+    print (inputs.size())
+    
     for i in range(20):
-        outputs, state = decoder(inputs, states=state)
+        outputs, state = _decoder(inputs, state)
         _, pred = outputs.max(1)
         sampled_ids.append(pred)
         inputs = _embed(pred)
+    print (state[0].size())
+    print (state[1].size())
+    print (np.array(state).shape)
 
     sampled_ids = torch.stack(sampled_ids, 1)
     sampled_ids = sampled_ids[0].cpu().numpy() 
@@ -75,9 +82,11 @@ def main(args):
     Encoder_ONNX_dir = '../models/onnx/encoder.onnx'
     Embeded_ONNX_dir = '../models/onnx/embeded.onnx'
 
+    state_for_onnx = torch.ones((1, 1, 512))
+
     # torch.onnx.export(encoder, image_tensor, Encoder_ONNX_dir)
-    torch.onnx.export(decoder, feature, Decoder_ONNX_dir)
-    torch.onnx.export(_embed, pred, Embeded_ONNX_dir)
+    torch.onnx.export(_decoder, (torch.ones(2, 256).to(device),state) , Decoder_ONNX_dir)
+    # torch.onnx.export(_embed, pred, Embeded_ONNX_dir)
 
     # Convert word_ids to words
     sampled_caption = []

@@ -38,7 +38,7 @@ class DecoderRNN(nn.Module):
         self.linear = nn.Linear(hidden_size, vocab_size)
         self.max_seg_length = max_seq_length
 
-    def forward(self, features, states=None):
+    def forward(self, features, states):
         # sampled_ids = []
         # inputs = features.unsqueeze(1)
         inputs = features.view(1, features.size(0), features.size(1))
@@ -47,6 +47,23 @@ class DecoderRNN(nn.Module):
         outputs = self.linear(hiddens.view(hiddens.size(0), hiddens.size(2)))
 
         return outputs, states
+
+class DecoderRNN2(nn.Module):
+    def __init__(self, lstm, linear):
+        super(DecoderRNN2, self).__init__()
+        self.lstm = lstm 
+        self.linear = linear
+
+    def forward(self, features, states):
+        # sampled_ids = []
+        # inputs = features.unsqueeze(1)
+        inputs = features.view(features.size(0), 1, features.size(1))
+
+        hiddens, states = self.lstm(inputs, states)
+        outputs = self.linear(hiddens.view(hiddens.size(0), hiddens.size(2)))
+
+        return outputs, states
+
 
         ''' 
         for i in range(self.max_seg_length):
