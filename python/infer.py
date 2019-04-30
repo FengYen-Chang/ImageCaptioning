@@ -113,25 +113,28 @@ def main() :
 
     sentance_ids = []
  
-    for i in range(1):
-        print (i)
-        if i == 0:
-            decoder_inputs = {decoder_input_blobs[0]: d_inputs,
-                              decoder_input_blobs[1]: state[0], 
-                              decoder_input_blobs[2]: state[1]}
-    
-        else: 
-            decoder_inputs = {decoder_input_blobs[0]: embedded_input,
-                              decoder_input_blobs[1]: state[0],
-                              decoder_input_blobs[2]: state[1]}
+    for i in range(20):
+        decoder_inputs = {decoder_input_blobs[0]: d_inputs,
+                          decoder_input_blobs[1]: state[0], 
+                          decoder_input_blobs[2]: state[1]}
 
-        decoder_out = exec_decoder.infer(decoder_input)
-        state = [decoder_out[decoder_output_blobs[0]], decoder_out[decoder_output_blobs[1]]]
-        pred = np.argmax(out[decoder_output_blobs[2]], 1)
-        sentance_ids.append(pred)
-        embedded_input = exec_embedded(pred)
+        decoder_out = exec_decoder.infer(decoder_inputs)
+        # state = [decoder_out[decoder_output_blobs[0]], decoder_out[decoder_output_blobs[1]]]
+        pred = np.argmax(decoder_out[decoder_output_blobs[2]], 1)
+        if i == 0 :
+            embedded_input = {embedded_input_blob: pred[0]}
+            sentance_ids.append(pred[0])
+            embedded_word = exec_embedded.infer(embedded_input)
+        else :
+            embedded_input = {embedded_input_blob: pred[1]}
+            sentance_ids.append(pred[1])
+            embedded_word = exec_embedded.infer(embedded_input)
+            state = [decoder_out[decoder_output_blobs[0]], decoder_out[decoder_output_blobs[1]]]
+            d_inputs[0, :] = d_inputs[1, :]
+            
+        d_inputs[1, :] = embedded_word[embedded_output_blob]
 
-    print (sampled_ids)
+    print (sentance_ids)
         
     
 if "__main__" :
