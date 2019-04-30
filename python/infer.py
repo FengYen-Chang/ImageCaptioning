@@ -3,6 +3,9 @@ import numpy as np
 import argparse
 import cv2
 
+import pickle # for vocabulary
+from build_vocab import Vocabulary
+
 from openvino.inference_engine import IENetwork, IEPlugin
 
 # @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
@@ -72,11 +75,9 @@ def main() :
     
     for i in iter_decoder_inputs:
         decoder_input_blobs.append(i)
-        print (i)
 
     for i in iter_decoder_outputs:
         decoder_output_blobs.append(i)
-        print (i)
 
     embedded_input_blob = next(iter_embedded_inputs)
     embedded_output_blob = next(iter_embedded_outputs)
@@ -91,8 +92,6 @@ def main() :
 
     # init state -> zeros
     init_state_shape = decoder.inputs[decoder_input_blobs[1]].shape
-    print (init_state_shape)
-    print (decoder.inputs[decoder_input_blobs[0]].shape)
     state = [np.zeros(init_state_shape, dtype=np.float32),
              np.zeros(init_state_shape, dtype=np.float32)]
 
@@ -111,7 +110,7 @@ def main() :
     d_inputs = np.zeros(decoder.inputs[decoder_input_blobs[0]].shape)
     d_inputs[0] = features[encoder_output_blob]
 
-    sentance_ids = []
+    sentence_ids = []
  
     for i in range(20):
         decoder_inputs = {decoder_input_blobs[0]: d_inputs,
@@ -123,19 +122,31 @@ def main() :
         pred = np.argmax(decoder_out[decoder_output_blobs[2]], 1)
         if i == 0 :
             embedded_input = {embedded_input_blob: pred[0]}
-            sentance_ids.append(pred[0])
+            sentence_ids.append(pred[0])
             embedded_word = exec_embedded.infer(embedded_input)
         else :
             embedded_input = {embedded_input_blob: pred[1]}
-            sentance_ids.append(pred[1])
+            sentence_ids.append(pred[1])
             embedded_word = exec_embedded.infer(embedded_input)
             state = [decoder_out[decoder_output_blobs[0]], decoder_out[decoder_output_blobs[1]]]
-            d_inputs[0, :] = d_inputs[1, :]
+            d_inputs[0, :] = d_inputs[1, :].copy()
             
         d_inputs[1, :] = embedded_word[embedded_output_blob]
+        # print (d_inputs)
 
-    print (sentance_ids)
-        
+    print (sentence_ids)
+
+    with open(args.vocab, 'rb') as f:
+        vocab = pickle.load(f)
+
+    sampled_caption = []
+    for word_id in sentance_ids:
+        word = vocab.idx2word[word_id]
+        sampled_caption.append(word)
+        if word == '<end>':
+            break
+    sentence = ' '.join(sampled_caption)
+    print (sentence)    
     
 if "__main__" :
     main()
