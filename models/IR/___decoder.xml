@@ -4,12 +4,12 @@
 		<layer id="0" name="0" precision="FP32" type="Input">
 			<output>
 				<port id="0">
-					<dim>20</dim>
+					<dim>1</dim>
 					<dim>256</dim>
 				</port>
 			</output>
 		</layer>
-		<layer id="1" name="19/Output_0/Data__const" precision="FP32" type="Const">
+		<layer id="1" name="20/Output_0/Data__const" precision="FP32" type="Const">
 			<output>
 				<port id="1">
 					<dim>3</dim>
@@ -19,10 +19,10 @@
 				<custom offset="0" size="12"/>
 			</blobs>
 		</layer>
-		<layer id="2" name="20" precision="FP32" type="Reshape">
+		<layer id="2" name="21" precision="FP32" type="Reshape">
 			<input>
 				<port id="0">
-					<dim>20</dim>
+					<dim>1</dim>
 					<dim>256</dim>
 				</port>
 				<port id="1">
@@ -31,7 +31,7 @@
 			</input>
 			<output>
 				<port id="2">
-					<dim>20</dim>
+					<dim>1</dim>
 					<dim>1</dim>
 					<dim>256</dim>
 				</port>
@@ -46,7 +46,7 @@
 				</port>
 			</output>
 		</layer>
-		<layer id="4" name="42/HiddenStateResize/DimData_const" precision="FP32" type="Const">
+		<layer id="4" name="43/HiddenStateResize/DimData_const" precision="FP32" type="Const">
 			<output>
 				<port id="1">
 					<dim>2</dim>
@@ -56,7 +56,7 @@
 				<custom offset="12" size="8"/>
 			</blobs>
 		</layer>
-		<layer id="5" name="42/HiddenStateResize" precision="FP32" type="Reshape">
+		<layer id="5" name="43/HiddenStateResize" precision="FP32" type="Reshape">
 			<input>
 				<port id="0">
 					<dim>1</dim>
@@ -83,7 +83,7 @@
 				</port>
 			</output>
 		</layer>
-		<layer id="7" name="42/CellStateResize/DimData_const" precision="FP32" type="Const">
+		<layer id="7" name="43/CellStateResize/DimData_const" precision="FP32" type="Const">
 			<output>
 				<port id="1">
 					<dim>2</dim>
@@ -93,7 +93,7 @@
 				<custom offset="12" size="8"/>
 			</blobs>
 		</layer>
-		<layer id="8" name="42/CellStateResize" precision="FP32" type="Reshape">
+		<layer id="8" name="43/CellStateResize" precision="FP32" type="Reshape">
 			<input>
 				<port id="0">
 					<dim>1</dim>
@@ -111,10 +111,10 @@
 				</port>
 			</output>
 		</layer>
-		<layer id="9" name="42/TensorIterator" precision="FP32" type="TensorIterator">
+		<layer id="9" name="43/TensorIterator" precision="FP32" type="TensorIterator">
 			<input>
 				<port id="0">
-					<dim>20</dim>
+					<dim>1</dim>
 					<dim>1</dim>
 					<dim>256</dim>
 				</port>
@@ -129,15 +129,17 @@
 			</input>
 			<output>
 				<port id="3">
-					<dim>20</dim>
+					<dim>1</dim>
 					<dim>1</dim>
 					<dim>512</dim>
 				</port>
 				<port id="4">
 					<dim>1</dim>
+					<dim>1</dim>
 					<dim>512</dim>
 				</port>
 				<port id="5">
+					<dim>1</dim>
 					<dim>1</dim>
 					<dim>512</dim>
 				</port>
@@ -156,7 +158,7 @@
 			</back_edges>
 			<body>
 				<layers>
-					<layer id="0" name="42/input_squeeze" precision="FP32" type="Reshape">
+					<layer id="0" name="43/input_squeeze" precision="FP32" type="Reshape">
 						<data dim="-1,256"/>
 						<input>
 							<port id="0">
@@ -172,7 +174,7 @@
 							</port>
 						</output>
 					</layer>
-					<layer id="1" name="42/LSTMCell" precision="FP32" type="LSTMCell">
+					<layer id="1" name="43/LSTMCell" precision="FP32" type="LSTMCell">
 						<data hidden_size="512"/>
 						<input>
 							<port id="0">
@@ -199,11 +201,11 @@
 							</port>
 						</output>
 						<blobs>
-							<weights offset="20429752" size="6291456"/>
-							<biases offset="26721208" size="8192"/>
+							<weights offset="20429732" size="6291456"/>
+							<biases offset="26721188" size="8192"/>
 						</blobs>
 					</layer>
-					<layer id="2" name="42output_unsqueeze" precision="FP32" type="Reshape">
+					<layer id="2" name="43output_unsqueeze" precision="FP32" type="Reshape">
 						<data dim="1,-1,512"/>
 						<input>
 							<port id="0">
@@ -226,76 +228,20 @@
 				</edges>
 			</body>
 		</layer>
-		<layer id="10" name="42/SqueezeNumDirections/1/DimData_const" precision="FP32" type="Const">
-			<output>
-				<port id="1">
-					<dim>3</dim>
-				</port>
-			</output>
-			<blobs>
-				<custom offset="20" size="12"/>
-			</blobs>
-		</layer>
-		<layer id="11" name="42/SqueezeNumDirections/1" precision="FP32" type="Reshape">
-			<input>
-				<port id="0">
-					<dim>1</dim>
-					<dim>512</dim>
-				</port>
-				<port id="1">
-					<dim>3</dim>
-				</port>
-			</input>
-			<output>
-				<port id="2">
-					<dim>1</dim>
-					<dim>1</dim>
-					<dim>512</dim>
-				</port>
-			</output>
-		</layer>
-		<layer id="12" name="42/SqueezeNumDirections/2/DimData_const" precision="FP32" type="Const">
-			<output>
-				<port id="1">
-					<dim>3</dim>
-				</port>
-			</output>
-			<blobs>
-				<custom offset="20" size="12"/>
-			</blobs>
-		</layer>
-		<layer id="13" name="42/SqueezeNumDirections/2" precision="FP32" type="Reshape">
-			<input>
-				<port id="0">
-					<dim>1</dim>
-					<dim>512</dim>
-				</port>
-				<port id="1">
-					<dim>3</dim>
-				</port>
-			</input>
-			<output>
-				<port id="2">
-					<dim>1</dim>
-					<dim>1</dim>
-					<dim>512</dim>
-				</port>
-			</output>
-		</layer>
-		<layer id="14" name="54/Output_0/Data__const" precision="FP32" type="Const">
+		<layer id="10" name="55/Output_0/Data__const" precision="FP32" type="Const">
 			<output>
 				<port id="1">
 					<dim>2</dim>
 				</port>
 			</output>
 			<blobs>
-				<custom offset="32" size="8"/>
+				<custom offset="12" size="8"/>
 			</blobs>
 		</layer>
-		<layer id="15" name="55" precision="FP32" type="Reshape">
+		<layer id="11" name="56" precision="FP32" type="Reshape">
 			<input>
 				<port id="0">
-					<dim>20</dim>
+					<dim>1</dim>
 					<dim>1</dim>
 					<dim>512</dim>
 				</port>
@@ -305,28 +251,28 @@
 			</input>
 			<output>
 				<port id="2">
-					<dim>20</dim>
+					<dim>1</dim>
 					<dim>512</dim>
 				</port>
 			</output>
 		</layer>
-		<layer id="16" name="56" precision="FP32" type="FullyConnected">
+		<layer id="12" name="57" precision="FP32" type="FullyConnected">
 			<data alpha="0" beta="0" out-size="9956"/>
 			<input>
 				<port id="0">
-					<dim>20</dim>
+					<dim>1</dim>
 					<dim>512</dim>
 				</port>
 			</input>
 			<output>
 				<port id="3">
-					<dim>20</dim>
+					<dim>1</dim>
 					<dim>9956</dim>
 				</port>
 			</output>
 			<blobs>
-				<weights offset="40" size="20389888"/>
-				<biases offset="20389928" size="39824"/>
+				<weights offset="20" size="20389888"/>
+				<biases offset="20389908" size="39824"/>
 			</blobs>
 		</layer>
 	</layers>
@@ -340,13 +286,9 @@
 		<edge from-layer="2" from-port="2" to-layer="9" to-port="0"/>
 		<edge from-layer="5" from-port="2" to-layer="9" to-port="1"/>
 		<edge from-layer="8" from-port="2" to-layer="9" to-port="2"/>
-		<edge from-layer="9" from-port="4" to-layer="11" to-port="0"/>
+		<edge from-layer="9" from-port="3" to-layer="11" to-port="0"/>
 		<edge from-layer="10" from-port="1" to-layer="11" to-port="1"/>
-		<edge from-layer="9" from-port="5" to-layer="13" to-port="0"/>
-		<edge from-layer="12" from-port="1" to-layer="13" to-port="1"/>
-		<edge from-layer="9" from-port="3" to-layer="15" to-port="0"/>
-		<edge from-layer="14" from-port="1" to-layer="15" to-port="1"/>
-		<edge from-layer="15" from-port="2" to-layer="16" to-port="0"/>
+		<edge from-layer="11" from-port="2" to-layer="12" to-port="0"/>
 	</edges>
 	<meta_data>
 		<MO_version value="2019.1.0-341-gc9b66a2"/>
