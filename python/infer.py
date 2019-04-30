@@ -154,5 +154,16 @@ def main() :
     sentence = ' '.join(sampled_caption)
     print (sentence)    
     
+    # parse sentence
+    p_sentence = ' '.join(sampled_caption[1:-1])
+    print (p_sentence)   
+ 
+    # show original pic
+    ori_img = cv2.imread(args.input)
+    cv2.imshow("ori img", ori_img)
+    k = cv2.waitKey(0)
+    if k == 27:  # ESC
+        cv2.destroyAllWindows()
+ 
 if "__main__" :
     main()
