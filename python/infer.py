@@ -34,7 +34,6 @@ def loader(img_dir, size):
 
 def main() :
     args = parsing().parse_args()
-    MAX_LENGTH = 20
 
 ##########################################################################
 
@@ -111,8 +110,9 @@ def main() :
     d_inputs[0] = features[encoder_output_blob]
 
     sentence_ids = []
+    MAX_LENGTH = decoder.inputs[decoder_input_blobs[0]].shape[0] - 1
  
-    for i in range(20):
+    for i in range(MAX_LENGTH):
         decoder_inputs = {decoder_input_blobs[0]: d_inputs,
                           decoder_input_blobs[1]: state[0], 
                           decoder_input_blobs[2]: state[1]}
@@ -120,6 +120,7 @@ def main() :
         decoder_out = exec_decoder.infer(decoder_inputs)
         # state = [decoder_out[decoder_output_blobs[0]], decoder_out[decoder_output_blobs[1]]]
         pred = np.argmax(decoder_out[decoder_output_blobs[2]], 1)
+        '''
         if i == 0 :
             embedded_input = {embedded_input_blob: pred[0]}
             sentence_ids.append(pred[0])
@@ -128,19 +129,24 @@ def main() :
             embedded_input = {embedded_input_blob: pred[1]}
             sentence_ids.append(pred[1])
             embedded_word = exec_embedded.infer(embedded_input)
-            state = [decoder_out[decoder_output_blobs[0]], decoder_out[decoder_output_blobs[1]]]
+            # state = [decoder_out[decoder_output_blobs[0]], decoder_out[decoder_output_blobs[1]]]
             d_inputs[0, :] = d_inputs[1, :].copy()
             
         d_inputs[1, :] = embedded_word[embedded_output_blob]
         # print (d_inputs)
-
+        '''
+        embedded_input = {embedded_input_blob: pred[i]}
+        sentence_ids.append(pred[i])
+        embedded_word = exec_embedded.infer(embedded_input)
+        d_inputs[(i + 1), :] = embedded_word[embedded_output_blob]
+        
     print (sentence_ids)
 
     with open(args.vocab, 'rb') as f:
         vocab = pickle.load(f)
 
     sampled_caption = []
-    for word_id in sentance_ids:
+    for word_id in sentence_ids:
         word = vocab.idx2word[word_id]
         sampled_caption.append(word)
         if word == '<end>':
