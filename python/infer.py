@@ -56,7 +56,7 @@ def main() :
 ############################################################################
 
     iter_encoder_inputs = iter(encoder.inputs)
-    iter_encoder_outputs = iter(encoder.inputs)
+    iter_encoder_outputs = iter(encoder.outputs)
 
     iter_decoder_inputs = iter(decoder.inputs)
     iter_decoder_outputs = iter(decoder.outputs)
@@ -92,7 +92,7 @@ def main() :
     # init state -> zeros
     init_state_shape = decoder.inputs[decoder_input_blobs[1]].shape
     print (init_state_shape)
-    print (decoder.outputs[decoder_output_blobs[1]].shape)
+    print (decoder.inputs[decoder_input_blobs[0]].shape)
     state = [np.zeros(init_state_shape, dtype=np.float32),
              np.zeros(init_state_shape, dtype=np.float32)]
 
@@ -100,25 +100,25 @@ def main() :
     exec_decoder = decoder_plugin.load(network = decoder)
 
     embedded_plugin = IEPlugin(device = 'CPU')
+    embedded_plugin.add_cpu_extension('/home/john-server/inference_engine_samples_build/intel64/Release/lib/libcpu_extension.so')
     exec_embedded = embedded_plugin.load(network = embedded)
-
-    # if args.cpu_extension :
-    #    plugin.add_cpu_extension(args.cpu_extension)
-    # res = plugin.impl.CTCGreedyDecoder();
 
 ############################################################################
 
     encoder_input = {encoder_input_blob: image}
     features = exec_encoder.infer(encoder_input)   
 
+    d_inputs = np.zeros(decoder.inputs[decoder_input_blobs[0]].shape)
+    d_inputs[0] = features[encoder_output_blob]
+
     sentance_ids = []
  
-    for i in range(MAX_LENGTH):
+    for i in range(1):
         print (i)
         if i == 0:
-            decoder_inputs = {decoder_input_blobs[0]: features,}
-                              # decoder_input_blobs[1]: state[0], 
-                              # decoder_input_blobs[2]: state[1]}
+            decoder_inputs = {decoder_input_blobs[0]: d_inputs,
+                              decoder_input_blobs[1]: state[0], 
+                              decoder_input_blobs[2]: state[1]}
     
         else: 
             decoder_inputs = {decoder_input_blobs[0]: embedded_input,
