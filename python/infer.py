@@ -98,7 +98,7 @@ def main() :
     exec_decoder = decoder_plugin.load(network = decoder)
 
     embedded_plugin = IEPlugin(device = 'CPU')
-    embedded_plugin.add_cpu_extension('/home/john-server/inference_engine_samples_build/intel64/Release/lib/libcpu_extension.so')
+    embedded_plugin.add_cpu_extension(args.cpu_extension)
     exec_embedded = embedded_plugin.load(network = embedded)
 
 ############################################################################
