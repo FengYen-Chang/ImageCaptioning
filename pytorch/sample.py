@@ -11,7 +11,8 @@ from PIL import Image
 
 
 # Device configuration
-device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+# device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+device = torch.device('cpu')
 
 def load_image(image_path, transform=None):
     image = Image.open(image_path)
@@ -50,7 +51,7 @@ def main(args):
  
     # Define embed
     _embed = Embed(decoder.embed)
-    _decoder = DecoderRNN2(decoder.lstm, decoder.linear)
+    # _decoder = DecoderRNN2(decoder.lstm, decoder.linear)
 
     # Generate an caption from the image
     feature = encoder(image_tensor)
@@ -66,10 +67,12 @@ def main(args):
     print (inputs.size())
     
     for i in range(20):
-        outputs, state = _decoder(inputs, state)
-        _, pred = outputs.max(1)
+        pred, inputs, state = decoder(inputs, state)
+        # _, pred = outputs.max(1)
         sampled_ids.append(pred)
-        inputs = _embed(pred)
+        # print (pred)
+        # inputs = _embed(pred)
+        # print (inputs)
     print (state[0].size())
     print (state[1].size())
     print (np.array(state).shape)
@@ -77,15 +80,17 @@ def main(args):
     sampled_ids = torch.stack(sampled_ids, 1)
     sampled_ids = sampled_ids[0].cpu().numpy() 
 
+    print (sampled_ids)
+
     # Save the model as .onnx format
-    Decoder_ONNX_dir = '../models/onnx/decoder.onnx'
+    Decoder_ONNX_dir = '../models/onnx/decoder_nightly.onnx'
     Encoder_ONNX_dir = '../models/onnx/encoder.onnx'
     Embeded_ONNX_dir = '../models/onnx/embeded.onnx'
 
     state_for_onnx = torch.ones((1, 1, 512))
 
     # torch.onnx.export(encoder, image_tensor, Encoder_ONNX_dir)
-    torch.onnx.export(_decoder, (torch.ones(2, 256).to(device),state) , Decoder_ONNX_dir)
+    torch.onnx.export(decoder, (torch.ones(1, 256).to(device),state) , Decoder_ONNX_dir)
     # torch.onnx.export(_embed, pred, Embeded_ONNX_dir)
 
     # Convert word_ids to words

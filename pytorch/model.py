@@ -35,6 +35,7 @@ class DecoderRNN(nn.Module):
         self.embed = nn.Embedding(vocab_size, embed_size)
         # self.lstm = nn.LSTM(embed_size, hidden_size, num_layers, batch_first=True)
         self.lstm = nn.LSTM(embed_size, hidden_size, num_layers)
+        print (embed_size, hidden_size, num_layers)
         self.linear = nn.Linear(hidden_size, vocab_size)
         self.max_seg_length = max_seq_length
 
@@ -45,8 +46,12 @@ class DecoderRNN(nn.Module):
 
         hiddens, states = self.lstm(inputs, states)
         outputs = self.linear(hiddens.view(hiddens.size(0), hiddens.size(2)))
+    
+        _, predicted = outputs.max(1)                        # predicted: (batch_size)
+        next_inputs = self.embed(predicted)                       # inputs: (batch_size, embed_size)
+        # next_inputs = next_inputs.unsqueeze(1)
 
-        return outputs, states
+        return predicted, next_inputs, states
 
 class DecoderRNN2(nn.Module):
     def __init__(self, lstm, linear):
