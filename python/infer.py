@@ -29,6 +29,7 @@ def loader(img_dir, size):
     img = cv2.resize(img, size, cv2.INTER_LANCZOS4)
     h, w, c = img.shape
     img = img.transpose((2, 0, 1)).reshape(1, c, h, w)
+    # img = img.reshape(1, c, h, w)
 
     return img
 
@@ -48,6 +49,7 @@ def main() :
 
     decoder = IENetwork(model = decoder_graph,
                         weights = decoder_weight)
+    decoder.add_outputs('60')
     
     embedded_graph = args.model_embedded
     embedded_weight = args.model_embedded[:-3] + 'bin'
@@ -78,6 +80,8 @@ def main() :
     for i in iter_decoder_outputs:
         decoder_output_blobs.append(i)
 
+    print (decoder_output_blobs)
+
     embedded_input_blob = next(iter_embedded_inputs)
     embedded_output_blob = next(iter_embedded_outputs)
 
@@ -95,8 +99,9 @@ def main() :
              np.zeros(init_state_shape, dtype=np.float32)]
 
     decoder_plugin = IEPlugin(device = 'CPU')
+    decoder_plugin.add_cpu_extension(args.cpu_extension)
     exec_decoder = decoder_plugin.load(network = decoder)
-
+    
     embedded_plugin = IEPlugin(device = 'CPU')
     embedded_plugin.add_cpu_extension(args.cpu_extension)
     exec_embedded = embedded_plugin.load(network = embedded)
@@ -106,20 +111,32 @@ def main() :
     encoder_input = {encoder_input_blob: image}
     features = exec_encoder.infer(encoder_input)   
 
+    # print (features)
+
     d_inputs = np.zeros(decoder.inputs[decoder_input_blobs[0]].shape)
     d_inputs[0] = features[encoder_output_blob]
+    d_inputs = features[encoder_output_blob]
 
     sentence_ids = []
-    MAX_LENGTH = decoder.inputs[decoder_input_blobs[0]].shape[0] - 1
- 
+    # MAX_LENGTH = decoder.inputs[decoder_input_blobs[0]].shape[0] - 1
+    MAX_LENGTH = 20    
+
     for i in range(MAX_LENGTH):
         decoder_inputs = {decoder_input_blobs[0]: d_inputs,
                           decoder_input_blobs[1]: state[0], 
                           decoder_input_blobs[2]: state[1]}
 
         decoder_out = exec_decoder.infer(decoder_inputs)
-        # state = [decoder_out[decoder_output_blobs[0]], decoder_out[decoder_output_blobs[1]]]
-        pred = np.argmax(decoder_out[decoder_output_blobs[2]], 1)
+        # print (decoder_out)        
+
+        state[0] = decoder_out[decoder_output_blobs[0]].copy()
+        state[1] = decoder_out[decoder_output_blobs[1]].copy()
+        # print (decoder_out[decoder_output_blobs[0]].shape)
+        # pred = np.argmax(decoder_out[decoder_output_blobs[2]], 1)
+        sentence_ids.append(decoder_out[decoder_output_blobs[3]][0])
+        # sentence_ids.append(pred[0])
+        d_inputs = decoder_out[decoder_output_blobs[2]].copy()
+        # d_inputs = exec_embedded.infer({embedded_input_blob: pred[0]})[embedded_output_blob].copy()
         '''
         if i == 0 :
             embedded_input = {embedded_input_blob: pred[0]}
@@ -135,10 +152,10 @@ def main() :
         d_inputs[1, :] = embedded_word[embedded_output_blob]
         # print (d_inputs)
         '''
-        embedded_input = {embedded_input_blob: pred[i]}
-        sentence_ids.append(pred[i])
-        embedded_word = exec_embedded.infer(embedded_input)
-        d_inputs[(i + 1), :] = embedded_word[embedded_output_blob]
+        # embedded_input = {embedded_input_blob: pred[i]}
+        # sentence_ids.append(pred[i])
+        # embedded_word = exec_embedded.infer(embedded_input)
+        # d_inputs[(i + 1), :] = embedded_word[embedded_output_blob]
         
     print (sentence_ids)
 
