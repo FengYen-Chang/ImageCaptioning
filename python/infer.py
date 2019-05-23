@@ -14,7 +14,7 @@ def parsing():
     parser = argparse.ArgumentParser(add_help = False)
     parser.add_argument('-m_d', '--model_decoder', default='', type=str)
     parser.add_argument('-m_e', '--model_encoder', default='', type=str)
-    parser.add_argument('-m_w', '--model_embedded', default='', type=str)
+    # parser.add_argument('-m_w', '--model_embedded', default='', type=str)
     parser.add_argument('-v', '--vocab', default='', type=str)
     parser.add_argument('-i', '--input', default='', type=str)
     parser.add_argument("-l", "--cpu_extension",
@@ -51,11 +51,11 @@ def main() :
                         weights = decoder_weight)
     decoder.add_outputs('60')
     
-    embedded_graph = args.model_embedded
-    embedded_weight = args.model_embedded[:-3] + 'bin'
+    # embedded_graph = args.model_embedded
+    # embedded_weight = args.model_embedded[:-3] + 'bin'
 
-    embedded = IENetwork(model = embedded_graph, 
-                         weights = embedded_weight)
+    # embedded = IENetwork(model = embedded_graph, 
+    #                      weights = embedded_weight)
 
 ############################################################################
 
@@ -65,8 +65,8 @@ def main() :
     iter_decoder_inputs = iter(decoder.inputs)
     iter_decoder_outputs = iter(decoder.outputs)
     
-    iter_embedded_inputs = iter(embedded.inputs)
-    iter_embedded_outputs = iter(embedded.outputs)
+    # iter_embedded_inputs = iter(embedded.inputs)
+    # iter_embedded_outputs = iter(embedded.outputs)
 
     encoder_input_blob = next(iter_encoder_inputs)
     encoder_output_blob = next(iter_encoder_outputs)
@@ -80,10 +80,10 @@ def main() :
     for i in iter_decoder_outputs:
         decoder_output_blobs.append(i)
 
-    print (decoder_output_blobs)
+    # print (decoder_output_blobs)
 
-    embedded_input_blob = next(iter_embedded_inputs)
-    embedded_output_blob = next(iter_embedded_outputs)
+    # embedded_input_blob = next(iter_embedded_inputs)
+    # embedded_output_blob = next(iter_embedded_outputs)
 
 ###########################################################################
 
@@ -102,9 +102,9 @@ def main() :
     decoder_plugin.add_cpu_extension(args.cpu_extension)
     exec_decoder = decoder_plugin.load(network = decoder)
     
-    embedded_plugin = IEPlugin(device = 'CPU')
-    embedded_plugin.add_cpu_extension(args.cpu_extension)
-    exec_embedded = embedded_plugin.load(network = embedded)
+    # embedded_plugin = IEPlugin(device = 'CPU')
+    # embedded_plugin.add_cpu_extension(args.cpu_extension)
+    # exec_embedded = embedded_plugin.load(network = embedded)
 
 ############################################################################
 
