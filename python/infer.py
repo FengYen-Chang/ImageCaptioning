@@ -16,6 +16,7 @@ def parsing():
     parser.add_argument('-m_e', '--model_encoder', default='', type=str)
     parser.add_argument('-v', '--vocab', default='', type=str)
     parser.add_argument('-i', '--input', default='', type=str)
+    parser.add_argument('-t_l', '--max_length', default=20, type=int)
     parser.add_argument("-l", "--cpu_extension",
                       help="Optional. Required for CPU custom layers. "
                            "MKLDNN (CPU)-targeted custom layers. Absolute path to a shared library with the"
@@ -97,7 +98,7 @@ def main() :
     d_inputs = features[encoder_output_blob]
 
     sentence_ids = []
-    MAX_LENGTH = 20    
+    MAX_LENGTH = args.max_length
 
     for i in range(MAX_LENGTH):
         decoder_inputs = {decoder_input_blobs[0]: d_inputs,
@@ -111,6 +112,11 @@ def main() :
         sentence_ids.append(decoder_out[decoder_output_blobs[3]][0])
         d_inputs = decoder_out[decoder_output_blobs[2]].copy()
         
+        if (sentence_ids[-1] == 2):
+            break 
+        
+    print (sentence_ids)
+
     with open(args.vocab, 'rb') as f:
         vocab = pickle.load(f)
 
