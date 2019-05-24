@@ -13,7 +13,6 @@ def parsing():
     parser = argparse.ArgumentParser(add_help = False)
     parser.add_argument('-m_d', '--model_decoder', default='', type=str)
     parser.add_argument('-m_e', '--model_encoder', default='', type=str)
-    parser.add_argument('-v', '--vocab', default='', type=str)
     parser.add_argument('-i', '--input', default='', type=str)
     parser.add_argument('-t_l', '--max_length', default=20, type=int)
     parser.add_argument("-l", "--cpu_extension",
@@ -131,7 +130,7 @@ def main() :
  
     # show original pic
     ori_img = cv2.imread(args.input)
-    cv2.imshow("ori img", ori_img)
+    cv2.imshow("Image", ori_img)
     k = cv2.waitKey(0)
     if k == 27:  # ESC
         cv2.destroyAllWindows()
