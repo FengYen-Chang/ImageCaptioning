@@ -3,8 +3,7 @@ import numpy as np
 import argparse
 import cv2
 
-import pickle # for vocabulary
-from build_vocab import Vocabulary
+from vocab import vocab 
 
 from openvino.inference_engine import IENetwork, IEPlugin
 
@@ -117,12 +116,9 @@ def main() :
         
     print (sentence_ids)
 
-    with open(args.vocab, 'rb') as f:
-        vocab = pickle.load(f)
-
     sampled_caption = []
     for word_id in sentence_ids:
-        word = vocab.idx2word[word_id]
+        word = vocab[int(word_id)]
         sampled_caption.append(word)
         if word == '<end>':
             break
