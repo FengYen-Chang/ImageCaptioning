@@ -11,7 +11,7 @@ Upon the start-up, the sample application reads command line parameters and load
 
 ### Models
 
-Download the converted __encoder__, __decoder__, and __word embedded__ model from [here](https://drive.google.com/file/d/1niJmVuYDY5MEPJ1ogsvplDrxC94MSDnX/view?usp=sharing) and save it on path `${PROJECT_ROOT}/models/`.
+Download the converted __encoder__ and __decoder__ model from [here](https://drive.google.com/file/d/1niJmVuYDY5MEPJ1ogsvplDrxC94MSDnX/view?usp=sharing) and save it on path `${PROJECT_ROOT}/models/`.
 
 ### Usage
 
