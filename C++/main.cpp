@@ -89,13 +89,17 @@ int main(int argc, char *argv[])
 
     std::vector<std::string> inputsName_e;
     InputsDataMap inputsInfo_e(network_e.getInputsInfo());
-    size_t input_w, input_h;
+    std::size_t input_w = 0, input_h = 0;
+
     for (auto & item : inputsInfo_e)
     {
         item.second->setPrecision(Precision::U8);
         inputsName_e.push_back(item.first);
-        input_w = item.second->getDims()[0];
-        input_h = item.second->getDims()[1];
+        if (inputsName_e.size() == 1)
+        {
+            input_w = item.second->getDims()[0];
+            input_h = item.second->getDims()[1];
+        }
     }
 
     std::vector<std::string> outputsName_e;
@@ -113,25 +117,26 @@ int main(int argc, char *argv[])
     network_reader_d.ReadWeights(binFileName_d);
 
     network_reader_d.getNetwork().setBatchSize(1);
-    network_reader_d.getNetwork().addOutput("60")
+    network_reader_d.getNetwork().addOutput("60");
     CNNNetwork network_d = network_reader_d.getNetwork();
 
-    std::size_t hidden_state_size;
-    
     std::vector<std::string> inputsName_d;
-    std::vector<InputInfo::Ptr> inputsData_d;
+    std::vector<std::size_t> inputsSize_d;
+    // std::vector<InputInfo::Ptr> inputsData_d;
     // std::vector<DataPtr> inputs;
+    
     InputsDataMap inputsInfo_d(network_d.getInputsInfo());
-    // for (auto & item : inputsInfo_d)
-    for (std::size_t i = 0; i < inputsInfo_d.size(); i++)
+    for (auto & item : inputsInfo_d)
+    // for (std::size_t i = 0; i < inputsInfo_d.size(); i++)
     {   
-        inputsInfo_d[i].second->setPrecision(Precision::FP32);
-        inputsName_d.push_back(inputsInfo_d[i].first);
+        item.second->setPrecision(Precision::FP32);
+        inputsName_d.push_back(item.first);
         
-        if (i == 1)
-            hidden_state_size = inputsInfo_d[i].second->getDims()[0] * 
-                                inputsInfo_d[i].second->getDims()[1] * 
-                                inputsInfo_d[i].second->getDims()[2];
+        auto dims = item.second->getDims();
+        int dims_t = 1;
+        for(int i = 0; i < dims.size(); i++)
+            dims_t *= dims[i];
+        inputsSize_d.push_back(dims_t);
     }
 
     std::vector<std::string> outputsName_d;
@@ -144,23 +149,21 @@ int main(int argc, char *argv[])
 
     // --------------------------------- EXECUTION ENCODER
 
-    auto executable_network_e = plugin.LoadNetwork(network_e, {});
+    auto executable_network_e = plugin_e.LoadNetwork(network_e, {});
     auto infer_request_e = executable_network_e.CreateInferRequest();
     
-    auto input_e = infer_request.GetBlob(inputsName_e[0]);
+    auto input_e = infer_request_e.GetBlob(inputsName_e[0]);
     auto input_data_e = input_e->buffer().as<PrecisionTrait<Precision::U8>::value_type*>();
 
     cv::Mat image = cv::imread(FLAGS_i);
     cv::cvtColor(image, image, cv::COLOR_BGR2RGB);
-    cv::resize(image, image, cv::Size(input_h, input_w), INTER_LANCZOS4);
-
-    size_t image_size = input_h * input_w;
+    cv::resize(image, image, cv::Size(input_h, input_w), cv::INTER_LANCZOS4);
     
-    for(size_t pid = 0; pid < image_size; pid++)
+    for(std::size_t pid = 0; pid < input_h * input_w; pid++)
     {
-        for (size_t ch = 0; ch < 3; ch++)
+        for (std::size_t ch = 0; ch < 3; ch++)
         {
-            input_data[ch * image_size + pid] = image.at<cv::Vec3b>(pid)[ch];
+            input_data_e[ch * input_h * input_w + pid] = image.at<cv::Vec3b>(pid)[ch];
         }        
     }
     
@@ -171,7 +174,7 @@ int main(int argc, char *argv[])
 
     // --------------------------------- EXECUTION DECODER
 
-    auto executable_network_d = plugin.LoadNetwork(network_d, {});
+    auto executable_network_d = plugin_d.LoadNetwork(network_d, {});
     auto infer_request_d = executable_network_d.CreateInferRequest();
     
     std::vector<int> sentence_ids;
@@ -184,42 +187,47 @@ int main(int argc, char *argv[])
     {
         if (text == 0)
         {
-            infer_request_d.GetBlob(inputsName_d[0])
-                ->buffer().as<PrecisionTrait<Precision::FP32>::value_type*>() = 
-                infer_request_e.GetBlob(outputsName_e[0])
-                    ->buffer().as<PrecisionTrait<Precision::FP32>::value_type*>();
+            for (std::size_t pid = 0; pid < inputsSize_d[0]; pid++)
+                infer_request_d.GetBlob(inputsName_d[0])->
+                    buffer().as<PrecisionTrait<Precision::FP32>::value_type*>()[pid] = 
+                infer_request_e.GetBlob(outputsName_e[0])->
+                    buffer().as<PrecisionTrait<Precision::FP32>::value_type*>()[pid];
             
-            for (size_t pid = 0; pid < hidden_state_size; pid++)
+            for (std::size_t pid = 0; pid < inputsSize_d[1]; pid++)
             {
-                infer_request_d.GetBlob(inputsName_d[1])
-                    ->buffer().as<PrecisionTrait<Precision::FP32>::value_type*>()[pid] = 0.f;
-                infer_request_d.GetBlob(inputsName_d[2])
-                    ->buffer().as<PrecisionTrait<Precision::FP32>::value_type*>()[pid] = 0.f;
+                infer_request_d.GetBlob(inputsName_d[1])->
+                    buffer().as<PrecisionTrait<Precision::FP32>::value_type*>()[pid] = 0.f;
+                infer_request_d.GetBlob(inputsName_d[2])->
+                    buffer().as<PrecisionTrait<Precision::FP32>::value_type*>()[pid] = 0.f;
             }
 
         }
         else
         {
-            infer_request_d.GetBlob(inputsName_d[0])
-                ->buffer().as<PrecisionTrait<Precision::FP32>::value_type*>() =
-                infer_request_d.GetBlob(outputsName_d[2])
-                    ->buffer().as<PrecisionTrait<Precision::FP32>::value_type*>();
-
-            infer_request_d.GetBlob(inputsName_d[1])
-                ->buffer().as<PrecisionTrait<Precision::FP32>::value_type*>() =
-                infer_request_d.GetBlob(outputsName_d[0])
-                    ->buffer().as<PrecisionTrait<Precision::FP32>::value_type*>();
+            for (std::size_t pid = 0; pid < inputsSize_d[0]; pid++)
+                infer_request_d.GetBlob(inputsName_d[0])->
+                    buffer().as<PrecisionTrait<Precision::FP32>::value_type*>()[pid] =
+                infer_request_d.GetBlob(outputsName_d[2])->
+                    buffer().as<PrecisionTrait<Precision::FP32>::value_type*>()[pid];
+            
+            for (std::size_t pid = 0; pid < inputsSize_d[1]; pid++)
+            {
+                infer_request_d.GetBlob(inputsName_d[1])->
+                    buffer().as<PrecisionTrait<Precision::FP32>::value_type*>()[pid] =
+                infer_request_d.GetBlob(outputsName_d[0])->
+                    buffer().as<PrecisionTrait<Precision::FP32>::value_type*>()[pid];
         
-            infer_request_d.GetBlob(inputsName_d[2])
-                ->buffer().as<PrecisionTrait<Precision::FP32>::value_type*>() =
-                infer_request_d.GetBlob(outputsName_d[1])
-                    ->buffer().as<PrecisionTrait<Precision::FP32>::value_type*>();
+                infer_request_d.GetBlob(inputsName_d[2])->
+                    buffer().as<PrecisionTrait<Precision::FP32>::value_type*>()[pid] =
+                infer_request_d.GetBlob(outputsName_d[1])->
+                    buffer().as<PrecisionTrait<Precision::FP32>::value_type*>()[pid];
+            }
         }
 
         infer_request_d.Infer();
         sentence_ids.push_back(
             infer_request_d.GetBlob(outputsName_d[3])
-                ->buffer().as<PrecisionTrait<Precision::FP32>::value_type*>()[0];
+                ->buffer().as<PrecisionTrait<Precision::FP32>::value_type*>()[0]
         );
 
         if (sentence_ids.back() == 2)
@@ -227,16 +235,16 @@ int main(int argc, char *argv[])
     }
 
     for (int i = 0; i < sentence_ids.size(); i++)
-        cout << sentence_ids[i] << "\t";
-    cout << "\n";
+        std::cout << sentence_ids[i] << "\t";
+    std::cout << "\n";
 
     std::vector<std::string> sampled_caption;
     for (int i = 0; i < sentence_ids.size(); i++)
         sampled_caption.push_back(vocab[sentence_ids[i]]);
 
     for (int i = 0; i < sampled_caption.size(); i++)
-        cout << sampled_caption[i] << " ";
-    cout << "\n";
+        std::cout << sampled_caption[i] << " ";
+    std::cout << "\n";
 
     
     return 0;
