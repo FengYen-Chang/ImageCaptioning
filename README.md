@@ -13,7 +13,7 @@ Upon the start-up, the sample application reads command line parameters and load
 
 Download the converted __encoder__ and __decoder__ model from [here](https://drive.google.com/file/d/1niJmVuYDY5MEPJ1ogsvplDrxC94MSDnX/view?usp=sharing) and save it on path `${PROJECT_ROOT}/models/`.
 
-###Python
+### Python
 
 ##### Usage
 
@@ -33,7 +33,7 @@ Following the below commend to run the sample :
 python infer.py -m_d ../models/decoder_nightly.xml -m_e ../models/encoder.xml -i ../images/example.png -t_l 20 --cpu_extension ${PATH_OF_CPU_EXTENSION_LIBRARY}
 ```
 
-###C++
+### C++
 
 ##### Compiler
 ```sh
