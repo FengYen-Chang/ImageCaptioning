@@ -57,10 +57,6 @@ bool ParseAndCheckCommandLine(int argc, char *argv[]) {
         throw std::logic_error("Parameter -m_e is not set");
     }
 
-    if (FLAGS_l.empty()) {
-        throw std::logic_error("Parameter -l is not set");
-    }
-
     return true;
 }
 
@@ -89,7 +85,7 @@ int main(int argc, char *argv[])
 
     std::vector<std::string> inputsName_e;
     InputsDataMap inputsInfo_e(network_e.getInputsInfo());
-    std::size_t input_w = 0, input_h = 0;
+    std::size_t input_w = 0, input_h = 0; // avoid uninitial error
 
     for (auto & item : inputsInfo_e)
     {
@@ -179,10 +175,6 @@ int main(int argc, char *argv[])
     
     std::vector<int> sentence_ids;
     
-    // cv::Mat init_state_h = cv::zeros(hidden_state_size[0], hidden_state_size[1], CV_32FC1);
-    // cv::Mat init_state_c = cv::zeros(hidden_state_size[0], hidden_state_size[1], CV_32FC1);
-    // (hidden_state_size[0], hidden_state_size[1], CV_32FC1, cv::S);
-
     for (int text = 0; text < FLAGS_tl; text++)
     {
         if (text == 0)
@@ -234,18 +226,22 @@ int main(int argc, char *argv[])
             break;
     }
 
-    for (int i = 0; i < sentence_ids.size(); i++)
-        std::cout << sentence_ids[i] << "\t";
-    std::cout << "\n";
-
     std::vector<std::string> sampled_caption;
-    for (int i = 0; i < sentence_ids.size(); i++)
-        sampled_caption.push_back(vocab[sentence_ids[i]]);
+    int real_lenght = sentence_ids.size();
 
-    for (int i = 0; i < sampled_caption.size(); i++)
-        std::cout << sampled_caption[i] << " ";
+    std::cout << "Caption : " << "\n";
+    for (int i = 0; i < real_lenght; i++)
+    {
+        sampled_caption.push_back(vocab[sentence_ids[i]]);
+        if (i > 0 && sentence_ids[i] != 2)     
+            std::cout << sampled_caption[i] << " ";
+    }
     std::cout << "\n";
 
+    cv::imshow("Image", cv::imread(FLAGS_i));
+    const int key = cv::waitKey(0);
+    if (27 == key)  // Esc
+        cv::destroyAllWindows();
     
     return 0;
 }//MAIN
