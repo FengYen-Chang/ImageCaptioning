@@ -10,7 +10,7 @@
 
 #include <string>
 
-std::string *vocab = {"<pad>", 
+std::string vocab[] = {"<pad>", 
                       "<start>", 
                       "<end>", 
                       "<unk>", 
@@ -9966,4 +9966,5 @@ std::string *vocab = {"<pad>",
                       "boom", 
                       "sandwhich", 
                       "pate", 
-                      "rotting"};
+                      "rotting"
+                      };
