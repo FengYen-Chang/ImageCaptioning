@@ -3,6 +3,8 @@ import numpy as np
 import argparse
 import cv2
 
+import timeit
+
 from vocab import vocab 
 
 from openvino.inference_engine import IENetwork, IEPlugin
@@ -148,7 +150,7 @@ def main() :
 
     _, c, h, w = encoder.inputs[encoder_input_blob].shape
     
-    encoder_plugin = IEPlugin(device = 'CPU')
+    encoder_plugin = IEPlugin(device = 'GPU')
     exec_encoder = encoder_plugin.load(network = encoder)
 
     # init state -> zeros
@@ -156,8 +158,11 @@ def main() :
     hidden_state = [np.zeros(init_state_shape, dtype=np.float32),
                     np.zeros(init_state_shape, dtype=np.float32)]
 
+    # HETERO:CPU,GPU
     decoder_plugin = IEPlugin(device = 'CPU')
     decoder_plugin.add_cpu_extension(args.cpu_extension)
+    # decoder_plugin.set_config({"GPU_EXTENSINO": "YES"})
+
     exec_decoder = decoder_plugin.load(network = decoder)
     
 ############################################################################
@@ -168,6 +173,7 @@ def main() :
         while (True):
             image_show, image = camera(cap, (w, h))
 
+            start = timeit.default_timer()
             show = infer(image, 
                         image_show,
                         exec_encoder, 
@@ -178,18 +184,22 @@ def main() :
                         decoder_output_blobs,
                         hidden_state, 
                         MAX_LENGTH)
+            stop = timeit.default_timer()
+
+            print ('Time: ', stop - start)
 
             hidden_state = [np.zeros(init_state_shape, dtype=np.float32),
                             np.zeros(init_state_shape, dtype=np.float32)]
 
             cv2.imshow("Image", show)
-            k = cv2.waitKey(2000)
+            k = cv2.waitKey(1)
             if k == 27:  # ESC
                 cv2.destroyAllWindows()
                 break
     else :
         image_show, image = loader(args.input, (w, h))
 
+        start = timeit.default_timer()
         show = infer(image, 
                     image_show,
                     exec_encoder, 
@@ -200,6 +210,9 @@ def main() :
                     decoder_output_blobs,
                     hidden_state, 
                     MAX_LENGTH)
+        stop = timeit.default_timer()
+
+        print ('Time: ', stop - start)
 
         hidden_state = [np.zeros(init_state_shape, dtype=np.float32),
                         np.zeros(init_state_shape, dtype=np.float32)]
