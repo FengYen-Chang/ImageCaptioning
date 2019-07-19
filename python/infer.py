@@ -23,12 +23,87 @@ def parsing():
     return parser
 
 def loader(img_dir, size):
-    img = cv2.imread(img_dir)
-    img = cv2.resize(img, size, cv2.INTER_LANCZOS4)
+    ori_img = cv2.imread(img_dir)
+    img = cv2.resize(ori_img, size, cv2.INTER_LANCZOS4)
     h, w, c = img.shape
     img = img.transpose((2, 0, 1)).reshape(1, c, h, w)
 
-    return img
+    return ori_img, img
+
+def camera(cap, size):
+    _, ori_img = cap.read()
+    img = cv2.resize(ori_img, size, cv2.INTER_LANCZOS4)
+    h, w, c = img.shape
+    img = img.transpose((2, 0, 1)).reshape(1, c, h, w)
+
+    return ori_img, img
+
+def infer(image, 
+          image_show, 
+          exec_encoder, 
+          encoder_input_blob, 
+          encoder_output_blob, 
+          exec_decoder, 
+          decoder_input_blobs, 
+          decoder_output_blobs, 
+          state,
+          MAX_LENGTH):
+    encoder_input = {encoder_input_blob: image}
+    features = exec_encoder.infer(encoder_input)   
+
+    # d_inputs = np.zeros(decoder.inputs[decoder_input_blobs[0]].shape)
+    # d_inputs[0] = features[encoder_output_blob]
+    d_inputs = features[encoder_output_blob]
+
+    sentence_ids = []
+
+    for i in range(MAX_LENGTH):
+        decoder_inputs = {decoder_input_blobs[0]: d_inputs,
+                        decoder_input_blobs[1]: state[0], 
+                        decoder_input_blobs[2]: state[1]}
+
+        decoder_out = exec_decoder.infer(decoder_inputs)
+
+        state[0] = decoder_out[decoder_output_blobs[0]].copy()
+        state[1] = decoder_out[decoder_output_blobs[1]].copy()
+        sentence_ids.append(decoder_out[decoder_output_blobs[3]][0])
+        d_inputs = decoder_out[decoder_output_blobs[2]].copy()
+        
+        if (sentence_ids[-1] == 2):
+            break 
+        
+    print (sentence_ids)
+
+    sampled_caption = []
+    for word_id in sentence_ids:
+        word = vocab[int(word_id)]
+        sampled_caption.append(word)
+        if word == '<end>':
+            break
+    sentence = ' '.join(sampled_caption)
+    print (sentence)    
+    
+    # parse sentence
+    # p_sentence = ' '.join(sampled_caption[1:-1])
+    # print (p_sentence)
+    
+    half_length = len(sampled_caption) // 2 + 1
+    p_sentence_show_1 = ' '.join(sampled_caption[1: half_length])
+    p_sentence_show_2 = ' '.join(sampled_caption[half_length: -1])
+    
+    print (p_sentence_show_1, p_sentence_show_2)
+
+    # show original pic
+    # ori_img = cv2.imread(args.input)
+    ori_h, ori_w, _ = image_show.shape
+    pt1 = (0, int(ori_h * 0.875))
+    pt2 = (ori_w, ori_h)
+    color = (255, 255, 255)
+    cv2.rectangle(image_show, pt1, pt2, color, -1)
+    cv2.putText(image_show, p_sentence_show_1, (0, int(ori_h * 0.9167)), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0,0,0),2,cv2.LINE_AA) 
+    cv2.putText(image_show, p_sentence_show_2, (0, int(ori_h * 0.9767)), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0,0,0),2,cv2.LINE_AA) 
+    
+    return image_show
 
 def main() :
     args = parsing().parse_args()
@@ -72,68 +147,69 @@ def main() :
 ###########################################################################
 
     _, c, h, w = encoder.inputs[encoder_input_blob].shape
-    image = loader(args.input, (w, h))
     
     encoder_plugin = IEPlugin(device = 'CPU')
     exec_encoder = encoder_plugin.load(network = encoder)
 
     # init state -> zeros
     init_state_shape = decoder.inputs[decoder_input_blobs[1]].shape
-    state = [np.zeros(init_state_shape, dtype=np.float32),
-             np.zeros(init_state_shape, dtype=np.float32)]
+    hidden_state = [np.zeros(init_state_shape, dtype=np.float32),
+                    np.zeros(init_state_shape, dtype=np.float32)]
 
     decoder_plugin = IEPlugin(device = 'CPU')
     decoder_plugin.add_cpu_extension(args.cpu_extension)
     exec_decoder = decoder_plugin.load(network = decoder)
     
 ############################################################################
-
-    encoder_input = {encoder_input_blob: image}
-    features = exec_encoder.infer(encoder_input)   
-
-    d_inputs = np.zeros(decoder.inputs[decoder_input_blobs[0]].shape)
-    d_inputs[0] = features[encoder_output_blob]
-    d_inputs = features[encoder_output_blob]
-
-    sentence_ids = []
     MAX_LENGTH = args.max_length
 
-    for i in range(MAX_LENGTH):
-        decoder_inputs = {decoder_input_blobs[0]: d_inputs,
-                          decoder_input_blobs[1]: state[0], 
-                          decoder_input_blobs[2]: state[1]}
+    if args.input == 'webcam':
+        cap = cv2.VideoCapture(0)
+        while (True):
+            image_show, image = camera(cap, (w, h))
 
-        decoder_out = exec_decoder.infer(decoder_inputs)
+            show = infer(image, 
+                        image_show,
+                        exec_encoder, 
+                        encoder_input_blob, 
+                        encoder_output_blob, 
+                        exec_decoder, 
+                        decoder_input_blobs, 
+                        decoder_output_blobs,
+                        hidden_state, 
+                        MAX_LENGTH)
 
-        state[0] = decoder_out[decoder_output_blobs[0]].copy()
-        state[1] = decoder_out[decoder_output_blobs[1]].copy()
-        sentence_ids.append(decoder_out[decoder_output_blobs[3]][0])
-        d_inputs = decoder_out[decoder_output_blobs[2]].copy()
-        
-        if (sentence_ids[-1] == 2):
-            break 
-        
-    print (sentence_ids)
+            hidden_state = [np.zeros(init_state_shape, dtype=np.float32),
+                            np.zeros(init_state_shape, dtype=np.float32)]
 
-    sampled_caption = []
-    for word_id in sentence_ids:
-        word = vocab[int(word_id)]
-        sampled_caption.append(word)
-        if word == '<end>':
-            break
-    sentence = ' '.join(sampled_caption)
-    print (sentence)    
-    
-    # parse sentence
-    p_sentence = ' '.join(sampled_caption[1:-1])
-    print (p_sentence)   
- 
-    # show original pic
-    ori_img = cv2.imread(args.input)
-    cv2.imshow("Image", ori_img)
-    k = cv2.waitKey(0)
-    if k == 27:  # ESC
-        cv2.destroyAllWindows()
- 
+            cv2.imshow("Image", show)
+            k = cv2.waitKey(2000)
+            if k == 27:  # ESC
+                cv2.destroyAllWindows()
+                break
+    else :
+        image_show, image = loader(args.input, (w, h))
+
+        show = infer(image, 
+                    image_show,
+                    exec_encoder, 
+                    encoder_input_blob, 
+                    encoder_output_blob, 
+                    exec_decoder, 
+                    decoder_input_blobs, 
+                    decoder_output_blobs,
+                    hidden_state, 
+                    MAX_LENGTH)
+
+        hidden_state = [np.zeros(init_state_shape, dtype=np.float32),
+                        np.zeros(init_state_shape, dtype=np.float32)]
+
+        cv2.imshow("Image", show)
+        k = cv2.waitKey(0)
+        if k == 27:  # ESC
+            cv2.destroyAllWindows()
+            
+############################################################################
+
 if "__main__" :
     main()
