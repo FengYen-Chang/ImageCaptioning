@@ -196,6 +196,50 @@ def main() :
             if k == 27:  # ESC
                 cv2.destroyAllWindows()
                 break
+                
+    elif args.input == 'image':
+        import image_list
+        idx = 0
+        idx_ = [6, 8, 10, 11, 14, 17, 22, 25, 26, 27, 
+                29, 30, 32, 33, 36, 37, 39, 40, 41, 43,
+                44, 45, 46, 48, 50, 52, 59, 61, 62, 63, 
+                65, 70, 71, 73, 78, 78, 79, 81, 86, 87, 
+                93, 95, 97, 99, 105, 110, 117, 126, 128, 
+                129, 131, 141, 156, 157, 159, 166, 167, 170, 
+                172, 174, 175, 176, 183, 184, 185, 188, 190, 193, 
+                295, 197, 199
+                ]
+        while (True):
+            image_show, image = loader(("../images/coco/" + image_list.image_list[idx_[idx % 70]]), (w, h))
+            # image_show, image = loader(("../images/coco/" + image_list.image_list[idx % 200]), (w, h))            
+            print (idx)
+            start = timeit.default_timer()
+            show = infer(image, 
+                        image_show,
+                        exec_encoder, 
+                        encoder_input_blob, 
+                        encoder_output_blob, 
+                        exec_decoder, 
+                        decoder_input_blobs, 
+                        decoder_output_blobs,
+                        hidden_state, 
+                        MAX_LENGTH)
+            stop = timeit.default_timer()
+
+            print ('Time: ', stop - start)
+
+            hidden_state = [np.zeros(init_state_shape, dtype=np.float32),
+                            np.zeros(init_state_shape, dtype=np.float32)]
+            idx += 1
+            cv2.namedWindow("Image", cv2.WND_PROP_FULLSCREEN)
+            cv2.imshow("Image", show)
+            k = cv2.waitKey(4000)
+            # k = cv2.waitKey(0)
+            if k == 27:  # ESC
+                cv2.destroyAllWindows()
+                break
+                # python infer.py -m_d ../models/IR/decoder_nightly.xml -m_e ../models/IR/encoder.xml -i image -t_l 20 --cpu_extension ../C++/build/ie_cpu_extension/libcpu_extension.so 
+
     else :
         image_show, image = loader(args.input, (w, h))
 
