@@ -86,26 +86,43 @@ def infer(image,
     print (sentence)    
     
     # parse sentence
-    # p_sentence = ' '.join(sampled_caption[1:-1])
-    # print (p_sentence)
+    p_sentence = ' '.join(sampled_caption[1:-1])
+    print (p_sentence)
     
     half_length = len(sampled_caption) // 2 + 1
-    p_sentence_show_1 = ' '.join(sampled_caption[1: half_length])
-    p_sentence_show_2 = ' '.join(sampled_caption[half_length: -1])
+    # p_sentence_show_1 = ' '.join(sampled_caption[1: half_length])
+    # p_sentence_show_2 = ' '.join(sampled_caption[half_length: -1])
     
-    print (p_sentence_show_1, p_sentence_show_2)
+    # print (p_sentence_show_1, p_sentence_show_2)
 
     # show original pic
     # ori_img = cv2.imread(args.input)
     ori_h, ori_w, _ = image_show.shape
-    pt1 = (0, int(ori_h * 0.875))
-    pt2 = (ori_w, ori_h)
-    color = (255, 255, 255)
-    cv2.rectangle(image_show, pt1, pt2, color, -1)
-    cv2.putText(image_show, p_sentence_show_1, (0, int(ori_h * 0.9167)), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0,0,0),2,cv2.LINE_AA) 
-    cv2.putText(image_show, p_sentence_show_2, (0, int(ori_h * 0.9767)), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0,0,0),2,cv2.LINE_AA) 
+    # pt1 = (0, int(ori_h * 0.875))
+    # pt2 = (ori_w, ori_h)
+    # color = (255, 255, 255)
+    # cv2.rectangle(image_show, pt1, pt2, color, -1)
+    # cv2.putText(image_show, p_sentence_show_1, (0, int(ori_h * 0.9167)), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0,0,0),2,cv2.LINE_AA) 
+    # cv2.putText(image_show, p_sentence_show_2, (0, int(ori_h * 0.9767)), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0,0,0),2,cv2.LINE_AA) 
+   
+    bg = np.zeros((972, 1920, 3), dtype=np.uint8)
+    bg[:] = np.mean(image_show)
+
+    mv_h = 486 - ori_h // 2 
+    mv_w = 960 - ori_w // 2
+
+    bg[mv_h: (mv_h + ori_h), mv_w: (mv_w + ori_w), :] = image_show 
+
+    text = np.zeros((108, 1920, 3), dtype=np.uint8)
+    text[:] = 255
+    cv2.putText(text, p_sentence, (50, 54), cv2.FONT_HERSHEY_SIMPLEX, 1.5, (0,0,0), 2, cv2.LINE_AA)
     
-    return image_show
+    o_img = np.concatenate((bg, text), axis=0)
+
+    # cv2.imwrite("output.jpg", o_img)
+ 
+    # return image_show
+    return o_img
 
 def main() :
     args = parsing().parse_args()
@@ -233,7 +250,7 @@ def main() :
             idx += 1
             cv2.namedWindow("Image", cv2.WND_PROP_FULLSCREEN)
             cv2.imshow("Image", show)
-            k = cv2.waitKey(4000)
+            k = cv2.waitKey(1000)
             # k = cv2.waitKey(0)
             if k == 27:  # ESC
                 cv2.destroyAllWindows()
