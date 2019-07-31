@@ -106,7 +106,9 @@ def infer(image,
     # cv2.putText(image_show, p_sentence_show_2, (0, int(ori_h * 0.9767)), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0,0,0),2,cv2.LINE_AA) 
    
     bg = np.zeros((972, 1920, 3), dtype=np.uint8)
-    bg[:] = np.mean(image_show)
+    bg[:, :, 0] = np.mean(image_show[:, :, 0])
+    bg[:, :, 1] = np.mean(image_show[:, :, 1])
+    bg[:, :, 2] = np.mean(image_show[:, :, 2])
 
     mv_h = 486 - ori_h // 2 
     mv_w = 960 - ori_w // 2
@@ -224,10 +226,11 @@ def main() :
                 93, 95, 97, 99, 105, 110, 117, 126, 128, 
                 129, 131, 141, 156, 157, 159, 166, 167, 170, 
                 172, 174, 175, 176, 183, 184, 185, 188, 190, 193, 
-                295, 197, 199
+                195, 197, 199
                 ]
         while (True):
-            image_show, image = loader(("../images/coco/" + image_list.image_list[idx_[idx % 70]]), (w, h))
+            # print (idx_[idx % len(idx_)])
+            image_show, image = loader(("../images/coco/" + image_list.image_list[idx_[idx % len(idx_)]]), (w, h))
             # image_show, image = loader(("../images/coco/" + image_list.image_list[idx % 200]), (w, h))            
             print (idx)
             start = timeit.default_timer()
@@ -250,7 +253,7 @@ def main() :
             idx += 1
             cv2.namedWindow("Image", cv2.WND_PROP_FULLSCREEN)
             cv2.imshow("Image", show)
-            k = cv2.waitKey(1000)
+            k = cv2.waitKey(2000)
             # k = cv2.waitKey(0)
             if k == 27:  # ESC
                 cv2.destroyAllWindows()
