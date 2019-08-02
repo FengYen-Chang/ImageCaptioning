@@ -111,14 +111,24 @@ def infer(image,
     bg[:, :, 2] = np.mean(image_show[:, :, 2])
 
     ratio_x, ratio_y = ori_w / 1920, ori_h / 972
+    print (ori_h, ori_w)
+    print (ratio_x, ratio_y)
     
     if ratio_x > 1 or ratio_y > 1 :
-        if ratio_x > ratio_y:
-            image_show = cv2.resize(image_show, ((int)(ori_h / ratio_x), 1920), cv2.INTER_LANCZOS4)
+        if ratio_x < ratio_y :
+            image_show = cv2.resize(image_show, (1920, (int)(ori_h / ratio_x)), cv2.INTER_LANCZOS4)
             ori_h, ori_w, _ = image_show.shape
-        else:
-            image_show = cv2.resize(image_show, (972, (int)(ori_w / ratio_y)), cv2.INTER_LANCZOS4)
+        else :
+            image_show = cv2.resize(image_show, ((int)(ori_w / ratio_y), 972), cv2.INTER_LANCZOS4)
             ori_h, ori_w, _ = image_show.shape
+    elif  ratio_x <= 1 and ratio_y <= 1:
+        if ratio_x > ratio_y :
+            image_show = cv2.resize(image_show, (1920, (int)(ori_h / ratio_x)), cv2.INTER_LANCZOS4)
+            ori_h, ori_w, _ = image_show.shape
+        else :
+            image_show = cv2.resize(image_show, ((int)(ori_w / ratio_y), 972), cv2.INTER_LANCZOS4)
+            ori_h, ori_w, _ = image_show.shape
+        print (ori_h, ori_w)
 
 
     mv_h = 486 - ori_h // 2 
