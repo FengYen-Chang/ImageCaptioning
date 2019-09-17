@@ -13,10 +13,11 @@ from openvino.inference_engine import IENetwork, IEPlugin
 
 def parsing():
     parser = argparse.ArgumentParser(add_help = False)
-    parser.add_argument('-m_d', '--model_decoder', default='', type=str)
-    parser.add_argument('-m_e', '--model_encoder', default='', type=str)
-    parser.add_argument('-i', '--input', default='', type=str)
-    parser.add_argument('-t_l', '--max_length', default=20, type=int)
+    args.add_argument('-h', '--help', action='help', default=SUPPRESS, help='Show this help message and exit.')
+    parser.add_argument('-m_d', '--model_decoder', help='Required. Path to decoder model', type=str)
+    parser.add_argument('-m_e', '--model_encoder', help='Required. Path to encoder model', type=str)
+    parser.add_argument('-i', '--input', help='Required. Path to an image file.', type=str)
+    parser.add_argument('-t_l', '--max_length', help='Optional. The number of vocabulary in the output sentence.' ,default=20, type=int)
     parser.add_argument("-l", "--cpu_extension",
                       help="Optional. Required for CPU custom layers. "
                            "MKLDNN (CPU)-targeted custom layers. Absolute path to a shared library with the"
