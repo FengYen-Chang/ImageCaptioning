@@ -7,13 +7,13 @@ import timeit
 
 from vocab import vocab 
 
-from openvino.inference_engine import IENetwork, IEPlugin
+from openvino.inference_engine import IENetwork, IECore
 
 # @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 
 def parsing():
     parser = argparse.ArgumentParser(add_help = False)
-    parser.add_argument('-h', '--help', action='help', default=SUPPRESS, help='Show this help message and exit.')
+    parser.add_argument('-h', '--help', action='help', default=argparse.SUPPRESS, help='Show this help message and exit.')
     parser.add_argument('-m_d', '--model_decoder', help='Required. Path to decoder model', type=str)
     parser.add_argument('-m_e', '--model_encoder', help='Required. Path to encoder model', type=str)
     parser.add_argument('-i', '--input', help='Required. Path to an image file.', type=str)
@@ -69,8 +69,8 @@ def infer(image,
 
         state[0] = decoder_out[decoder_output_blobs[0]].copy()
         state[1] = decoder_out[decoder_output_blobs[1]].copy()
-        sentence_ids.append(decoder_out[decoder_output_blobs[3]][0])
-        d_inputs = decoder_out[decoder_output_blobs[2]].copy()
+        sentence_ids.append(decoder_out[decoder_output_blobs[2]][0])
+        d_inputs = decoder_out[decoder_output_blobs[3]].copy()
         
         if (sentence_ids[-1] == 2):
             break 
@@ -164,7 +164,8 @@ def main() :
 
     decoder = IENetwork(model = decoder_graph,
                         weights = decoder_weight)
-    decoder.add_outputs('60')
+    # decoder.add_outputs('60')
+    decoder.add_outputs('58/Squeeze')
 
 ############################################################################
 
@@ -191,8 +192,10 @@ def main() :
 
     _, c, h, w = encoder.inputs[encoder_input_blob].shape
     
-    encoder_plugin = IEPlugin(device = 'GPU')
-    exec_encoder = encoder_plugin.load(network = encoder)
+    # encoder_plugin = IEPlugin(device = 'GPU')
+    encoder_plugin = IECore()
+    # exec_encoder = encoder_plugin.load(network = encoder)
+    exec_encoder = encoder_plugin.load_network(network = encoder, device_name = 'GPU')
 
     # init state -> zeros
     init_state_shape = decoder.inputs[decoder_input_blobs[1]].shape
@@ -200,11 +203,13 @@ def main() :
                     np.zeros(init_state_shape, dtype=np.float32)]
 
     # HETERO:CPU,GPU
-    decoder_plugin = IEPlugin(device = 'CPU')
-    decoder_plugin.add_cpu_extension(args.cpu_extension)
+    # decoder_plugin = IEPlugin(device = 'CPU')
+    decoder_plugin = IECore()
+    # decoder_plugin.add_cpu_extension(args.cpu_extension)
+    decoder_plugin.add_extension(args.cpu_extension, "CPU")
     # decoder_plugin.set_config({"GPU_EXTENSINO": "YES"})
-
-    exec_decoder = decoder_plugin.load(network = decoder)
+    # exec_decoder = decoder_plugin.load(network = decoder)
+    exec_decoder = decoder_plugin.load_network(network = decoder, device_name = 'CPU')
     
 ############################################################################
     MAX_LENGTH = args.max_length
@@ -256,6 +261,7 @@ def main() :
             # image_show, image = loader(("../images/coco/" + image_list.image_list[idx % 200]), (w, h))            
             print (idx)
             start = timeit.default_timer()
+            print (decoder_output_blobs)
             show = infer(image, 
                         image_show,
                         exec_encoder, 
